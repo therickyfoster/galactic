@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galactic Steward Checklist v2.0 · Enhanced Mission Control</title>
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description" content="Advanced photorealistic galactic background with XP gamification, RSS feeds, collaborative features, and offline-first architecture for building regenerative systems." />
+  <meta name="generator" content="Foster + Navi · Planetary Restoration Archive" />
+  <link rel="me" href="https://planetaryrestorationarchive.com" />
+  <link rel="me" href="https://github.com/TheRickyFoster" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2300d0ff'/%3E%3Cpath d='M12 34c10-2 20-10 24-18 2 6 8 12 16 14-8 2-16 8-20 16-2-4-12-10-20-12z' fill='%23fff' opacity='.8'/%3E%3C/svg%3E" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data: https:; img-src 'self' blob: data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-inline' blob:; connect-src 'self' blob: https:; frame-ancestors 'none'; base-uri 'none'">
+  <style>
+    /* ========= BASE THEME SYSTEM ========= */
+    /* Tooltip: Theme system with multiple presets (space, medieval, anime, cyberpunk).
+       Usage: Select from theme dropdown. Each theme changes colors, fonts, and atmosphere.
+       Expected outcome: Visual transformation matching selected aesthetic while maintaining accessibility. */
+    
+    :root {
+      --bg:#02030a; --fg:#e8f6ff; --muted:#9dc6d6; --accent:#42e0ff; --good:#6cf7b8; --warn:#ffd166; --bad:#ff5d73; --panel:rgba(2,3,10,.65);
+      --xp-color:#ffd700; --badge-color:#ff6b9d;
+    }
+    
+    /* Medieval Theme */
+    [data-theme="medieval"] {
+      --bg:#1a0f0a; --fg:#f4e8d0; --muted:#b8a88a; --accent:#d4af37; --good:#90c890; --warn:#e8a838; --bad:#c84848; --panel:rgba(40,25,15,.75);
+      --xp-color:#d4af37; --badge-color:#8b4513;
+    }
+    
+    /* Anime Theme */
+    [data-theme="anime"] {
+      --bg:#0a0520; --fg:#ffe5ff; --muted:#d4a5ff; --accent:#ff69b4; --good:#7cfc00; --warn:#ffa500; --bad:#ff1493; --panel:rgba(25,10,45,.7);
+      --xp-color:#ff69b4; --badge-color:#9370db;
+    }
+    
+    /* Cyberpunk Theme */
+    [data-theme="cyberpunk"] {
+      --bg:#0d0208; --fg:#00ff41; --muted:#00d9ff; --accent:#ff00ff; --good:#39ff14; --warn:#ffcc00; --bad:#ff0080; --panel:rgba(13,2,8,.8);
+      --xp-color:#ff00ff; --badge-color:#00ff41;
+    }
+
+    html,body{height:100%;background:var(--bg);color:var(--fg);margin:0;font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;overflow-x:hidden}
+    *{box-sizing:border-box}
+    a{color:var(--accent);text-decoration:none} 
+    a:hover{text-decoration:underline}
+    a:focus{outline:2px dashed var(--accent);outline-offset:.2rem}
+    
+    /* Tooltip: Skip link for keyboard navigation accessibility.
+       Usage: Press Tab on page load to reveal.
+       Expected outcome: Jump directly to main content, bypassing navigation. */
+    .skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .skip:focus{left:1rem;top:1rem;width:auto;height:auto;background:#000a;color:#fff;padding:.5rem .75rem;border-radius:.5rem;z-index:999}
+
+    /* ========= CANVAS BACKGROUND ========= */
+    /* Tooltip: Photorealistic animated star field with parallax and constellations.
+       Usage: Automatically renders on page load. Respects prefers-reduced-motion.
+       Expected outcome: Dynamic cosmic backdrop with twinkling stars and moving constellation lines. */
+    
+    #sky{position:fixed;inset:0;z-index:-1;display:block;background:radial-gradient(circle at 20% 10%, #0b1530 0%, #040714 40%, #02030a 100%)}
+    .nebula{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.35;}
+
+    /* ========= LAYOUT ========= */
+    /* Tooltip: Sticky header with progress tracking and quick actions.
+       Usage: Always visible at top. Shows completion percentage and provides export/import.
+       Expected outcome: Persistent navigation and status information. */
+    
+    header{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;padding:.6rem .9rem;background:linear-gradient(180deg, rgba(2,3,10,.95), rgba(2,3,10,.45) 70%, transparent);backdrop-filter:saturate(140%) blur(6px);z-index:100;border-bottom:1px solid rgba(66,224,255,.15)}
+    header h1{font-size:clamp(1rem,2.5vw,1.25rem);margin:0;font-weight:700;letter-spacing:.3px}
+    header .meta{margin-left:auto;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+
+    main{display:grid;grid-template-columns:1fr;gap:1rem;padding:5rem 1rem 2rem;max-width:1400px;margin:0 auto}
+    @media(min-width:960px){main{grid-template-columns:minmax(320px,380px) 1fr}}
+    @media(min-width:1400px){main{grid-template-columns:380px 1fr 320px}}
+
+    /* Tooltip: Card component for content sections with glassmorphism effect.
+       Usage: Contains mission info, settings, checklist groups, XP tracker, etc.
+       Expected outcome: Visually distinct content areas with depth and hierarchy. */
+    
+    .card{background:var(--panel);border:1px solid rgba(66,224,255,.2);border-radius:18px;box-shadow:0 10

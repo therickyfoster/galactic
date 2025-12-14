@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galactic Steward Checklist · Photorealistic Sky</title>
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description" content="Photorealistic galactic background with moving constellations + offline-first, privacy-first checklist for building a regenerative XP/attestation system." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2300d0ff'/%3E%3Cpath d='M12 34c10-2 20-10 24-18 2 6 8 12 16 14-8 2-16 8-20 16-2-4-12-10-20-12z' fill='%23fff' opacity='.8'/%3E%3C/svg%3E" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-inline' blob:; connect-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'">
+  <style>
+    :root {
+      --bg:#02030a; --fg:#e8f6ff; --muted:#9dc6d6; --accent:#42e0ff; --good:#6cf7b8; --warn:#ffd166; --bad:#ff5d73; --panel:rgba(2,3,10,.65);
+    }
+    html,body{height:100%;background:var(--bg);color:var(--fg);margin:0;font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;}
+    a{color:var(--accent)} a:focus{outline:2px dashed var(--accent);outline-offset:.2rem}
+    .skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .skip:focus{left:1rem;top:1rem;width:auto;height:auto;background:#000a;color:#fff;padding:.5rem .75rem;border-radius:.5rem}
+
+    /* Canvas background */
+    #sky{position:fixed;inset:0;z-index:-1;display:block;background:radial-gradient(circle at 20% 10%, #0b1530 0%, #040714 40%, #02030a 100%)}
+    .nebula{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.35;}
+
+    /* Layout */
+    header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:.75rem;padding:.6rem .9rem;background:linear-gradient(180deg, rgba(2,3,10,.85), rgba(2,3,10,.35) 70%, transparent);backdrop-filter:saturate(140%) blur(4px);z-index:10}
+    header h1{font-size:clamp(1rem,2.5vw,1.25rem);margin:0;font-weight:700;letter-spacing:.3px}
+    header .meta{margin-left:auto;display:flex;gap:.5rem;align-items:center}
+
+    main{display:grid;grid-template-columns:1fr;gap:1rem;padding:5rem 1rem 2rem;max-width:1200px;margin:0 auto}
+    @media(min-width:960px){main{grid-template-columns:380px 1fr}}
+
+    .card{background:var(--panel);border:1px solid #0b2a3a;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden}
+    .card header{position:sticky;top:3.2rem;background:linear-gradient(180deg, rgba(2,3,10,.9), rgba(2,3,10,.5));padding:.8rem 1rem;border-bottom:1px solid #0b2a3a}
+    .card header h2{font-size:1rem;margin:0}
+    .content{padding:1rem}
+
+    .controls{display:flex;flex-wrap:wrap;gap:.5rem}
+    .btn{appearance:none;border:1px solid #195a72;background:#061723;color:var(--fg);padding:.5rem .75rem;border-radius:12px;cursor:pointer}
+    .btn:hover{background:#0a2736}
+
+    .switch{display:inline-flex;align-items:center;gap:.5rem}
+    .switch input{accent-color:var(--accent)}
+
+    .progress{height:10px;background:#0a1a22;border-radius:999px;border:1px solid #15384a;overflow:hidden}
+    .progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#89f7fe);width:0%}
+
+    /* Checklist */
+    .group{border:1px solid #0b2a3a;border-radius:14px;margin:.75rem 0}
+    .group>summary{list-style:none;cursor:pointer;padding:.7rem 1rem;background:#061220;font-weight:600;border-bottom:1px solid #0b2a3a}
+    .group>summary::-webkit-details-marker{display:none}
+    .items{padding:.6rem 1rem}
+    .item{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;align-items:center;padding:.45rem 0;border-bottom:1px dashed #0b2a3a}
+    .item:last-child{border-bottom:none}
+    .item input[type="checkbox"]{inline-size:1rem;block-size:1rem}
+    .tag{font-size:.75rem;color:var(--muted);border:1px solid #17485b;padding:.15rem .4rem;border-radius:999px}
+
+    /* Floating GitHub corner */
+    .gh-corner{position:fixed;top:0;right:0;z-index:20}
+
+    /* Toast */
+    .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#041018;border:1px solid #0b2a3a;padding:.6rem .8rem;border-radius:10px;display:none}
+
+    /* Settings */
+    .grid{display:grid;gap:.6rem}
+    .grid.two{grid-template-columns:1fr 1fr}
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion:reduce){#sky{background:#000;}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- GitHub Corner -->
+  <a class="gh-corner" href="https://github.com/TheRickyFoster" target="_blank" rel="noopener" aria-label="View source on GitHub">
+    <svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true">
+      <path d="M0 0l115 115h15l12 27 108 108V0z" fill="#151513"></path>
+      <path d="M128 109c-15-9-35-5-46 9-3 4-5 9-6 14-1 7 0 15 4 21 7 11 20 17 33 15 11-2 20-9 25-19 7-14 3-31-10-40z" fill="white" opacity=".9"></path>
+      <path d="M115 115l-15-15c-2-2-5-2-7 0-2 2-2 5 0 7l15 15c2 2 5 2 7 0 2-2 2-5 0-7z" fill="#42e0ff"></path>
+    </svg>
+  </a>
+
+  <!-- Photorealistic Sky -->
+  <canvas id="sky" role="img" aria-label="Animated star field and constellations"></canvas>
+  <canvas id="nebula" class="nebula" aria-hidden="true"></canvas>
+
+  <header>
+    <h1>Galactic Steward Checklist</h1>
+    <div class="meta">
+      <span id="progressLabel" aria-live="polite">0% complete</span>
+      <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+      <label class="switch" title="High contrast mode">
+        <input id="contrastToggle" type="checkbox" /> <span>High contrast</span>
+      </label>
+      <label class="switch" title="Reduce motion">
+        <input id="motionToggle" type="checkbox" /> <span>Reduce motion</span>
+      </label>
+      <button class="btn" id="exportBtn" title="Export checklist JSON">Export</button>
+      <button class="btn" id="importBtn" title="Import checklist JSON">Import</button>
+      <button class="btn" id="randomBtn" title="Add a random cosmic task">Cosmic die 🎲</button>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section class="card" aria-labelledby="intro-title">
+      <header><h2 id="intro-title">Mission</h2></header>
+      <div class="content">
+        <p>Trial-and-error our way to a sovereign, privacy-first impact engine. Photons overhead, proofs in our pockets. Check tasks as we iterate; export when you want to sync with your team or file issues on GitHub.</p>
+        <div class="controls">
+          <button class="btn" id="newCustom">New custom task</button>
+          <button class="btn" id="refreshSW">Refresh app</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card" aria-labelledby="settings-title">
+      <header><h2 id="settings-title">Settings</h2></header>
+      <div class="content grid">
+        <label class="grid two"><span>GitHub repo for issues</span>
+          <input id="repoInput" type="text" placeholder="TheRickyFoster/planetary-restoration-archive" aria-describedby="repoHelp" />
+        </label>
+        <small id="repoHelp" class="muted">Used to open prefilled issues when a task needs escalation.</small>
+        <button class="btn" id="openIssue">Open GitHub issue from selection</button>
+      </div>
+    </aside>
+
+    <section class="card" aria-labelledby="checklist-title">
+      <header><h2 id="checklist-title">Build-out Checklist</h2></header>
+      <div class="content" id="checklistRoot">
+        <!-- Groups will be injected here -->
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="log-title">
+      <header><h2 id="log-title">Changelog & Notes</h2></header>
+      <div class="content">
+        <ul id="log" aria-live="polite"></ul>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Saved.</div>
+
+  <script>
+  // ========= Utility =========
+  const $ = (s, el=document) => el.querySelector(s);
+  const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+  const store = {
+    get k(){ return 'galactic-checklist-v1'; },
+    load(){ try{ return JSON.parse(localStorage.getItem(this.k)) || {}; }catch{ return {}; } },
+    save(data){ localStorage.setItem(this.k, JSON.stringify(data)); toast('Saved.'); }
+  };
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',1800); }
+
+  // ========= Photorealistic Sky (Canvas) =========
+  const sky = $('#sky'); const neb = $('#nebula');
+  const ctx = sky.getContext('2d'); const nctx = neb.getContext('2d');
+  let W=sky.width=innerWidth, H=sky.height=innerHeight; neb.width=W; neb.height=H;
+  const DPR = Math.min(devicePixelRatio||1, 2); sky.width=W*DPR; sky.height=H*DPR; ctx.scale(DPR,DPR); neb.width=W*DPR; neb.height=H*DPR; nctx.scale(DPR,DPR);
+
+  // Star + constellation field
+  let reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STAR_COUNT = reduceMotion ? 250 : 900;
+  const stars = [];
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+  function mkStar(){
+    return { x: rand(0,W), y: rand(0,H), z: rand(.2,1.5), r: rand(.3,1.7), tw: Math.random()*Math.PI*2, c: rand(.6,1) };
+  }
+  for(let i=0;i<STAR_COUNT;i++) stars.push(mkStar());
+
+  // Nebula painting (soft radial fogs)
+  function paintNebula(){
+    nctx.clearRect(0,0,W,H);
+    for(let i=0;i<6;i++){
+      const gx = rand(0,W), gy = rand(0,H);
+      const grd = nctx.createRadialGradient(gx,gy,0,gx,gy,rand(200,600));
+      const hue = rand(180,220); // blue-cyan
+      grd.addColorStop(0, `hsla(${hue},80%,65%,.25)`);
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      nctx.fillStyle=grd; nctx.beginPath(); nctx.arc(gx,gy,rand(200,600),0,Math.PI*2); nctx.fill();
+    }
+  }
+  paintNebula();
+
+  // Random constellations: connect local neighbors
+  const links = [];
+  function buildConstellations(){
+    links.length=0; const sample = stars.filter((_,i)=> i%Math.round(rand(3,7))===0);
+    sample.forEach((s,idx)=>{
+      // find nearest 3 neighbors
+      const d = sample.map((t,i)=>({i,dist:(s.x-t.x)**2+(s.y-t.y)**2})).sort((a,b)=>a.dist-b.dist).slice(1,4);
+      d.forEach(n=>{ links.push({a:s, b:sample[n.i], alpha: rand(.2,.7)}); });
+    });
+  }
+  buildConstellations();
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // parallax drift
+    const t = performance.now()/1000;
+    for(const s of stars){
+      const tw = (Math.sin(s.tw + t*1.2)+1)/2; // twinkle factor
+      const px = s.x + Math.sin((s.y+t*0.05))*s.z*2;
+      const py = s.y + Math.cos((s.x+t*0.03))*s.z*2;
+      ctx.globalAlpha=0.8*s.c* (0.5+tw*0.5);
+      ctx.beginPath();
+      ctx.arc(px, py, s.r*(0.6+tw*0.6), 0, Math.PI*2);
+      ctx.fillStyle='#eef8ff';
+      ctx.fill();
+    }
+    // constellation lines
+    ctx.globalAlpha=0.25;
+    ctx.lineWidth=1;
+    ctx.strokeStyle='#8fe7ff';
+    for(const L of links){ ctx.beginPath(); ctx.moveTo(L.a.x, L.a.y); ctx.lineTo(L.b.x, L.b.y); ctx.stroke(); }
+    ctx.globalAlpha=1;
+    !reduceMotion && requestAnimationFrame(draw);
+  }
+  if(!reduceMotion) draw();
+  addEventListener('resize', ()=>{ W=innerWidth; H=innerHeight; sky.width=W*DPR; sky.height=H*DPR; ctx.scale(DPR,DPR); neb.width=W*DPR; neb.height=H*DPR; nctx.scale(DPR,DPR); paintNebula(); buildConstellations(); });
+
+  // ========= Checklist Data =========
+  const DEFAULT_GROUPS = [
+    {
+      title:"XP Engine & Achievements",
+      items:[
+        {t:"Define XP table (small, medium, large actions)", tag:"design"},
+        {t:"Cooldowns for high-XP actions", tag:"anti-abuse"},
+        {t:"Achievements registry (unlock rules)", tag:"design"},
+        {t:"Local persistence (IndexedDB) with migrations", tag:"storage"},
+        {t:"Progressive disclosure (prevent risky incentivization)", tag:"safety"}
+      ]
+    },
+    {
+      title:"Attestations & Trust",
+      items:[
+        {t:"Per-device keypair (Ed25519) generation", tag:"crypto"},
+        {t:"N-of-M witness model (community attestation)", tag:"governance"},
+        {t:"Signed action envelopes (JSON) + verification", tag:"crypto"},
+        {t:"Challenge window flow (private dispute)", tag:"safety"},
+        {t:"Reputation with decay (per-key weight)", tag:"reputation"}
+      ]
+    },
+    {
+      title:"Sync & Offline",
+      items:[
+        {t:"CRDT document shapes for Ventures/Grants/SafetyReports", tag:"data"},
+        {t:"Bundle export/import (QR / file share)", tag:"sync"},
+        {t:"Community relay (Raspberry Pi) gossip", tag:"edge"},
+        {t:"Soft-merge rules: witnessed > unwitnessed", tag:"merge"},
+        {t:"Service Worker caching strategy (versioned)", tag:"pwa"}
+      ]
+    },
+    {
+      title:"Safety & Legal",
+      items:[
+        {t:"Pseudonyms by default; shadow XP option", tag:"privacy"},
+        {t:"Jurisdiction-aware legal info cards (offline)", tag:"legal"},
+        {t:"Panic flow with quick data hide", tag:"safety"},
+        {t:"Redaction layer before export", tag:"privacy"},
+        {t:"No location by default; fuzzed tiles if opted-in", tag:"privacy"}
+      ]
+    },
+    {
+      title:"Equity & Inclusion",
+      items:[
+        {t:"Starter boosts + time-capped ceilings", tag:"fairness"},
+        {t:"Mentorship multipliers (women-first pathways)", tag:"equity"},
+        {t:"Bangla-first micro-lessons; audio tips", tag:"l10n"},
+        {t:"Text-only mode for low-end devices", tag:"perf"},
+        {t:"Accessibility (WCAG AA: contrast, focus, ARIA)", tag:"a11y"}
+      ]
+    },
+    {
+      title:"Civic-Tech Modules",
+      items:[
+        {t:"Report unsafe routes (non-identifying proofs)", tag:"civic"},
+        {t:"Venture-day festival kit (templates)", tag:"community"},
+        {t:"Micro-grant ledger with attestation gates", tag:"funding"},
+        {t:"Apprenticeships with local gov/NGOs", tag:"governance"},
+        {t:"Impact dashboard (aggregates only)", tag:"metrics"}
+      ]
+    },
+    {
+      title:"Performance & QA",
+      items:[
+        {t:"Prefer reduced motion support", tag:"perf"},
+        {t:"Lighthouse 90+ budget (JS < 120KB initial)", tag:"perf"},
+        {t:"Test plan: low-RAM Android devices", tag:"qa"},
+        {t:"Versioned assets + SW update toast", tag:"pwa"},
+        {t:"E2E verification script (offline)", tag:"qa"}
+      ]
+    }
+  ];
+
+  // ========= Render Checklist =========
+  const state = store.load();
+  if(!state.groups) state.groups = DEFAULT_GROUPS;
+  if(!state.done) state.done = {};
+
+  function render(){
+    const root = $('#checklistRoot'); root.innerHTML='';
+    state.groups.forEach((g, gi)=>{
+      const det = document.createElement('details'); det.className='group'; det.open=true;
+      const sum = document.createElement('summary'); sum.textContent=g.title; det.appendChild(sum);
+      const wrap = document.createElement('div'); wrap.className='items';
+      g.items.forEach((it, ii)=>{
+        const id = `${gi}-${ii}`;
+        const row = document.createElement('div'); row.className='item';
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.id=id; cb.checked=!!state.done[id];
+        const lab = document.createElement('label'); lab.setAttribute('for', id); lab.textContent = it.t;
+        const tag = document.createElement('span'); tag.className='tag'; tag.textContent=it.tag;
+        cb.addEventListener('change', ()=>{ state.done[id]=cb.checked; persist(); });
+        row.append(cb, lab, tag); wrap.appendChild(row);
+      });
+      det.appendChild(wrap); root.appendChild(det);
+    });
+    updateProgress();
+  }
+
+  function updateProgress(){
+    const total = state.groups.reduce((n,g)=> n+g.items.length, 0);
+    const done = Object.values(state.done).filter(Boolean).length;
+    const pct = total? Math.round((done/total)*100):0;
+    $('#progressBar').style.width = pct+'%';
+    $('#progressLabel').textContent = pct+"% complete";
+  }
+
+  function persist(){ store.save(state); updateProgress(); log("Saved state"); }
+  function log(txt){ const li=document.createElement('li'); li.textContent=new Date().toLocaleString()+": "+txt; $('#log').prepend(li); }
+
+  // ========= Import / Export / Random =========
+  $('#exportBtn').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='galactic-checklist.json'; a.click(); URL.revokeObjectURL(url);
+  });
+  $('#importBtn').addEventListener('click', async ()=>{
+    const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
+    inp.onchange = async ()=>{ const file = inp.files[0]; if(!file) return; const text = await file.text(); try{ const data = JSON.parse(text); Object.assign(state, data); store.save(state); render(); log('Imported data'); }catch{ alert('Invalid JSON'); } };
+    inp.click();
+  });
+  const RANDOM_IDEAS = [
+    'Peer-to-peer issue escrow: release funds when 3 mentors attest',
+    'Shadow XP for sensitive roles; public badges only after consent',
+    'Bluetooth mesh sync for offline neighborhoods',
+    'Local-only AI tutor (on-device) for safety & legal training',
+    'Crisis mode: UI switches to minimal text-only with SOS',
+    'Fuzzed-geo heatmaps that never store precise coordinates',
+    'Mentor rotation to prevent gatekeeping',
+    'Community festival: pop-up marketplace with impact counters',
+    'Green-only achievements for climate tasks (mangroves, reefs)',
+    'One-tap “Proof Pack” export with redactions'
+  ];
+  $('#randomBtn').addEventListener('click', ()=>{
+    const idea = RANDOM_IDEAS[Math.floor(Math.random()*RANDOM_IDEAS.length)];
+    const g = state.groups[0]; g.items.push({t:idea, tag:'idea'}); persist(); render();
+  });
+
+  // ========= Custom task =========
+  $('#newCustom').addEventListener('click', ()=>{
+    const t = prompt('Describe the new task'); if(!t) return;
+    const tag = prompt('Short tag (e.g., design, perf, safety)')||'custom';
+    state.groups.push({title:'Custom', items:[{t, tag}]}); persist(); render();
+  });
+
+  // ========= GitHub Issue helper =========
+  $('#openIssue').addEventListener('click', ()=>{
+    const repo = $('#repoInput').value.trim() || 'TheRickyFoster/planetary-restoration-archive';
+    const sel = getSelectedTasksSummary();
+    const body = encodeURIComponent(`### Context\nSelected tasks from Galactic Checklist:\n\n${sel}\n\n**Device info:** ${navigator.userAgent}\n**App version:** v1`);
+    const title = encodeURIComponent('Checklist follow-up: tasks to discuss');
+    const url = `https://github.com/${repo}/issues/new?title=${title}&body=${body}`;
+    window.open(url, '_blank');
+  });
+  function getSelectedTasksSummary(){
+    const lines=[]; state.groups.forEach((g,gi)=> g.items.forEach((it,ii)=>{ const id=`${gi}-${ii}`; if(state.done[id]) lines.push(`- [x] ${g.title}: ${it.t} (${it.tag})`); }));
+    return lines.join('\n');
+  }
+
+  // ========= UI toggles =========
+  $('#contrastToggle').addEventListener('change', (e)=>{
+    document.documentElement.style.setProperty('--panel', e.target.checked? 'rgba(0,0,0,.8)':'rgba(2,3,10,.65)');
+    document.documentElement.style.setProperty('--fg', e.target.checked? '#ffffff':'#e8f6ff');
+    document.documentElement.style.setProperty('--muted', e.target.checked? '#cfe8ff':'#9dc6d6');
+  });
+  $('#motionToggle').addEventListener('change', (e)=>{ reduceMotion = e.target.checked; if(reduceMotion) return; requestAnimationFrame(draw); });
+
+  // ========= PWA (inline manifest + SW) =========
+  const manifest = {
+    name: 'Galactic Steward Checklist', short_name:'Galactic Checklist', start_url:'./', display:'standalone', background_color:'#02030a', theme_color:'#02030a',
+    icons:[{src:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA2NCA2NCc%2BPGNpcmNsZSByPScyOCcgY3g9JzMyJyBjeT0nMzInIGZpbGw9JyMwMGQwZmYnLz48L3N2Zz4=',sizes:'64x64',type:'image/svg+xml'}]
+  };
+  const manifestEl = document.createElement('script'); manifestEl.type='application/manifest+json'; manifestEl.textContent = JSON.stringify(manifest); document.head.appendChild(manifestEl);
+
+  async function registerSW(){
+    if(!('serviceWorker' in navigator)) return;
+    const swCode = `
+      const CACHE = 'galactic-checklist-v1';
+      const CORE = self.registration ? [./] : [];
+      self.addEventListener('install', e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./']))); self.skipWaiting(); });
+      self.addEventListener('activate', e=>{ e.waitUntil(self.clients.claim()); });
+      self.addEventListener('fetch', e=>{ e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))); });
+    `;
+    const blob = new Blob([swCode], {type:'text/javascript'});
+    const url = URL.createObjectURL(blob);
+    try{ const reg = await navigator.serviceWorker.register(url); log('Service worker registered'); }catch(err){ console.warn('SW failed', err); }
+  }
+  registerSW();
+  $('#refreshSW').addEventListener('click', ()=>{ if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.update())); toast('Refreshing…'); }});
+
+  // ========= Init =========
+  render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic Verbatim Panel</title>
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self' blob:;
+  script-src 'self' 'unsafe-inline' blob:;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob:;
+  connect-src 'self';
+  frame-ancestors 'none';
+  base-uri 'none';
+">
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg:#070a14; --panel:#0e1330; --panel2:#141a3c; --ink:#e9ecff; --muted:#a5aed4;
+    --accent:#8ee7ff; --accent2:#bfa3ff; --glow:0 0 30px rgba(142,231,255,.35);
+    --radius:18px; --border:1px solid rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Inter,Arial}
+  body{
+    background:
+      radial-gradient(1200px 700px at 70% -10%, rgba(142,231,255,.08), transparent 60%),
+      radial-gradient(900px 600px at 10% 120%, rgba(191,163,255,.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+  }
+
+  /* Animated constellation layers */
+  #sky, #links {position:fixed; inset:0; z-index:0; display:block}
+  #links{pointer-events:none}
+
+  /* App shell */
+  .app{position:relative; z-index:1; height:100%; display:grid; grid-template-rows:auto 1fr}
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:12px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+    border-bottom:var(--border); backdrop-filter: blur(6px);
+  }
+  .brand{display:flex; gap:12px; align-items:center}
+  .glyph{width:14px;height:14px;border-radius:50%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+         box-shadow:var(--glow)}
+  .brand h1{margin:0;font-size:16px;letter-spacing:.4px}
+  .tag{font-size:11px;color:var(--muted);padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:var(--border)}
+  .actions{display:flex; gap:8px; flex-wrap:wrap}
+  .btn{cursor:pointer; font-size:12px; color:var(--ink); padding:8px 12px; border-radius:999px;
+       background:linear-gradient(180deg,var(--panel2),var(--panel)); border:var(--border); box-shadow:var(--glow)}
+  .btn:focus-visible{outline:2px solid var(--accent)}
+
+  main{display:grid; grid-template-columns:minmax(320px, 760px) 1fr; gap:14px; padding:14px; height:calc(100% - 58px)}
+  .verbatim-wrap, .content{
+    background:linear-gradient(180deg, var(--panel2), var(--panel));
+    border:var(--border); border-radius:var(--radius); padding:14px; overflow:auto;
+  }
+  .verbatim-wrap{box-shadow:var(--glow)}
+  h2{margin:0 0 8px 0; font-size:14px; letter-spacing:.3px; color:#fff}
+  .hint{color:var(--muted); font-size:12px; margin-bottom:8px}
+
+  /* VERBATIM: lock formatting */
+  pre#verbatim{
+    margin:0; padding:12px; white-space:pre-wrap; word-break:break-word; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background:rgba(0,0,0,.25); border-radius:12px; border:1px solid rgba(255,255,255,.06);
+  }
+  .footer-tip{font-size:11px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<canvas id="links"></canvas>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="glyph"></div>
+      <h1>Galactic Verbatim Panel</h1>
+      <span class="tag">constellation kernel</span>
+    </div>
+    <div class="actions">
+      <label class="btn" title="Load a .txt file">
+        Load .txt
+        <input id="file" type="file" accept=".txt,text/plain" hidden>
+      </label>
+      <button class="btn" id="copy">Copy text</button>
+      <button class="btn" id="export">Export .txt</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="verbatim-wrap">
+      <h2>Top Info (verbatim)</h2>
+      <p class="hint">This text is rendered <em>verbatim</em> from the embedded JSON below (or a dropped .txt file). No substitutions, no smart quotes, no styling of characters—what you paste is what displays.</p>
+      <pre id="verbatim"></pre>
+      <div class="footer-tip">Drag & drop a .txt anywhere on the page to replace this content.</div>
+    </section>
+
+    <section class="content">
+      <h2>Body (your page continues here)</h2>
+      <p class="hint">Add whatever modules, dashboards, or ledgers you want in this right panel. The top panel will always preserve your pasted text 1:1.</p>
+      <p>Style is intergalactic by default: animated starfield with soft constellation lines, neon accents, and a glassy UI. Fork this as your universal wrapper.</p>
+    </section>
+  </main>
+</div>
+
+<!-- Store the VERBATIM text here exactly as you want it shown -->
+<script type="application/json" id="verbatimPayload">
+{
+  "text": "PASTE VERBATIM TEXT HERE.\\n\\nThis panel preserves every character. Line breaks (\\n) are respected. Nothing is reformatted. Replace this string with your content."
+}
+</script>
+
+<script>
+/* ====== Animated constellation background ====== */
+const sky = document.getElementById('sky');
+const links = document.getElementById('links');
+const sctx = sky.getContext('2d');
+const lctx = links.getContext('2d');
+let nodes = [];
+
+function resize(){
+  sky.width = links.width = innerWidth;
+  sky.height = links.height = innerHeight;
+  const N = Math.min(220, Math.floor((innerWidth*innerHeight)/15000));
+  nodes = Array.from({length:N}, () => ({
+    x: Math.random()*sky.width,
+    y: Math.random()*sky.height,
+    vx: (Math.random()-.5)*0.3,
+    vy: (Math.random()-.5)*0.3,
+    r: Math.random()*1.2+0.4
+  }));
+}
+addEventListener('resize', resize);
+resize();
+
+function tick(){
+  sctx.clearRect(0,0,sky.width,sky.height);
+  lctx.clearRect(0,0,links.width,links.height);
+
+  // stars
+  for(const n of nodes){
+    n.x+=n.vx; n.y+=n.vy;
+    if(n.x<0||n.x>sky.width) n.vx*=-1;
+    if(n.y<0||n.y>sky.height) n.vy*=-1;
+    sctx.beginPath();
+    sctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    sctx.fillStyle='rgba(220,235,255,0.9)';
+    sctx.fill();
+  }
+  // constellation links
+  const maxD = 120;
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i], b=nodes[j];
+      const dx=a.x-b.x, dy=a.y-b.y;
+      const d=Math.hypot(dx,dy);
+      if(d<maxD){
+        lctx.globalAlpha = 1 - d/maxD;
+        lctx.beginPath();
+        lctx.moveTo(a.x,a.y); lctx.lineTo(b.x,b.y);
+        lctx.strokeStyle='rgba(142,231,255,0.25)';
+        lctx.lineWidth=0.6;
+        lctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+
+/* ====== Verbatim loader (never mutates characters) ====== */
+const out = document.getElementById('verbatim');
+function loadFromPayload(){
+  try{
+    const raw = document.getElementById('verbatimPayload').textContent;
+    const {text} = JSON.parse(raw || "{}");
+    out.textContent = (text ?? "").toString();
+  }catch(e){
+    out.textContent = "[Error reading verbatimPayload JSON] " + e.message;
+  }
+}
+loadFromPayload();
+
+function handleFile(file){
+  const reader = new FileReader();
+  reader.onload = e => { out.textContent = e.target.result; };
+  reader.readAsText(file);
+}
+
+document.getElementById('file').addEventListener('change', e=>{
+  const f = e.target.files?.[0];
+  if(f) handleFile(f);
+});
+
+addEventListener('dragover', e=>{ e.preventDefault(); });
+addEventListener('drop', e=>{
+  e.preventDefault();
+  const f = e.dataTransfer.files?.[0];
+  if(f && f.type.startsWith('text')) handleFile(f);
+});
+
+/* Utilities */
+document.getElementById('copy').onclick = ()=>{
+  navigator.clipboard.writeText(out.textContent || "");
+};
+document.getElementById('export').onclick = ()=>{
+  const blob = new Blob([out.textContent||""], {type:'text/plain'});
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'verbatim.txt' });
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+/* Optional tiny offline cache (single-file SW) */
+if('serviceWorker' in navigator){
+  const sw = `
+    self.addEventListener('install', e=>{
+      e.waitUntil(caches.open('galactic-v1').then(c=>c.addAll(['./'])));
+    });
+    self.addEventListener('fetch', e=>{
+      e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+    });
+  `;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'text/javascript'})));
+}
+</script>
+</body>
+</html>
